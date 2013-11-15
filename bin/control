@@ -1,0 +1,73 @@
+#!/bin/bash -eu
+
+source $OPENSHIFT_CARTRIDGE_SDK_BASH
+
+function start {
+  echo "Starting Nexus cartridge"
+
+  start_nexus_daemon
+  
+}
+
+function stop {
+  echo "Stopping Nexus cartridge"
+
+  stop_nexus_daemon
+
+}
+
+function restart {
+
+  stop
+  start
+}
+
+function status {
+
+  nexus_status=$(${OPENSHIFT_NEXUS_DIR}bin/nexus status)
+
+  if [[ "$nexus_status" == *"Nexus OSS is running"* ]]
+  then
+        client_result "Nexus is Running"
+  else
+        client_result "Nexus is Not Running"
+        exit 1
+  fi
+
+
+}
+
+
+function tidy {
+
+  client_message "Emptying Log and Temporary Directories"
+
+  rm -rf ${OPENSHIFT_NEXUS_DIR}logs/*
+  rm -rf ${OPENSHIFT_NEXUS_DIR}tmp/*
+
+}
+
+
+function start_nexus_daemon() {
+
+  ${OPENSHIFT_NEXUS_DIR}bin/nexus start
+
+}
+
+function stop_nexus_daemon() {
+
+  ${OPENSHIFT_NEXUS_DIR}bin/nexus stop
+
+}
+
+
+case "$1" in
+  start)                start ;;
+  stop)                 stop ;;
+  restart)              restart ;;
+  status)               status ;;
+  tidy)                 tidy ;;
+  *)           exit 0
+esac
+
+exit 0

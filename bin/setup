@@ -1,0 +1,67 @@
+#!/bin/bash -e
+
+case "$1" in
+  -v|--version)
+    version="$2"
+esac
+
+# Bring in the OpenShift SDK
+source $OPENSHIFT_CARTRIDGE_SDK_BASH
+
+# Create the Necessary Directories for Nexus
+mkdir -p ${OPENSHIFT_NEXUS_DIR}/{bin,conf,lib,logs,nexus,tmp}
+
+# Create sonatype-work Directory
+mkdir -p $OPENSHIFT_DATA_DIR/sonatype-work/nexus
+
+# Copy Files
+cp -r ${OPENSHIFT_NEXUS_DIR}/versions/${version}/bin/* $OPENSHIFT_NEXUS_DIR/bin
+cp -r ${OPENSHIFT_NEXUS_DIR}/versions/${version}/conf/* $OPENSHIFT_NEXUS_DIR/conf
+cp -r ${OPENSHIFT_NEXUS_DIR}/versions/${version}/lib/* $OPENSHIFT_NEXUS_DIR/lib
+cp -r ${OPENSHIFT_NEXUS_DIR}/versions/${version}/nexus/* $OPENSHIFT_NEXUS_DIR/nexus
+
+# Set tmp directory because Nexus defaults to location not writable within OpenShift
+sed -i -e "$ a\java.io.tmpdir=\${openshift.nexus.tmp}" ${OPENSHIFT_NEXUS_DIR}/conf/nexus.properties
+
+# Add Wrapper Java Parameters
+cat <<EOT >> ${OPENSHIFT_NEXUS_DIR}/bin/jsw/conf/wrapper.conf
+
+# OpenShift Parameters
+wrapper.java.additional.3=-Djava.util.prefs.userRoot=%OPENSHIFT_DATA_DIR%userPrefs
+wrapper.java.additional.4=-Dopenshift.nexus.tmp=%OPENSHIFT_NEXUS_DIR%tmp
+wrapper.backend.type=PIPE
+wrapper.java.additional.auto_bits=FALSE
+EOT
+
+# Check Java Version (OpenShift by default uses 32 bit JVM)
+JAVA_VER=$(java -version 2>&1)
+
+if [[ "$JAVA_VER" =~ "64-Bit" ]]
+then
+   echo "." &> /dev/null 
+else
+   sed -i -e "$ a\wrapper.java.additional.5=-d32" ${OPENSHIFT_NEXUS_DIR}/bin/jsw/conf/wrapper.conf
+fi
+
+
+
+# Create tmp user preferences directory
+mkdir -p ${OPENSHIFT_DATA_DIR}userPrefs
+
+
+# Update Wrapper to Version 3.5.9
+sed -i -e "s/wrapper-3.2.3/wrapper-3.5.9/g" ${OPENSHIFT_NEXUS_DIR}/bin/jsw/conf/wrapper.conf
+
+cp -Rf ${OPENSHIFT_NEXUS_DIR}/versions/${version}/jsw-3.5.9/* ${OPENSHIFT_NEXUS_DIR}/bin/jsw/
+
+rm -rf ${OPENSHIFT_NEXUS_DIR}/bin/jsw/lib/wrapper-3.2.3.jar
+
+
+
+
+client_result ""
+client_result "Nexus Created Successfully and Will Be Available Shortly. Please make note of following:"
+client_result ""
+client_result " Admin User: admin"
+client_result "   Password: admin123"
+client_result ""

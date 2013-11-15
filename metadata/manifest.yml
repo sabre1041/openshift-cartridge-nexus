@@ -1,0 +1,80 @@
+---
+Name: nexus
+Cartridge-Short-Name: NEXUS
+Display-Name: Nexus
+Description: "Sonatype Nexus artifact repository"
+Version: '2.6.4'
+License: EPEL 1.0
+License-Url: http://www.sonatype.org/nexus/license
+Vendor: Sonatype
+Cartridge-Version: 0.0.1
+Cartridge-Vendor: sabre1041
+Categories:
+- service
+- web_framework
+- ci
+Website: http://www.sonatype.org/nexus/
+Provides:
+- nexus-2.6.4
+- nexus
+Cart-Data:
+- Key: OPENSHIFT_NEXUS_LOG_DIR
+  Type: environment
+  Description: Directory to store application log files.
+- Key: OPENSHIFT_NEXUS_PORT
+  Type: environment
+  Description: Internal port to which the web-framework binds to.
+- Key: OPENSHIFT_NEXUS_IP
+  Type: environment
+  Description: Internal IP to which the web-framework binds to.
+- Key: OPENSHIFT_APP_DNS
+  Type: environment
+  Description: Fully qualified domain name for the application.
+- Key: OPENSHIFT_APP_NAME
+  Type: environment
+  Description: Application name
+- Key: OPENSHIFT_DATA_DIR
+  Type: environment
+  Description: Directory to store application data files. Preserved across git-pushes. Not shared across gears.
+- Key: OPENSHIFT_APP_UUID
+  Type: environment
+  Description: Unique ID which identified the application. Does not change between gears.
+- Key: OPENSHIFT_GEAR_UUID
+  Type: environment
+  Description: Unique ID which identified the gear. This value changes between gears.
+- Key: NEXUS_URL
+  Type: environment
+  Description: URL for the nexus server
+- Key: PLEXUS_NEXUS_WORK
+  Type: environment
+  Description: Location of the sonatype-work directory
+Publishes:
+Subscribes:
+  set-env:
+    Type: ENV:*
+    Required: false
+Endpoints:
+- Private-IP-Name: IP
+  Private-Port-Name: PORT
+  Private-Port: 8081
+  Public-Port-Name: PROXY_PORT
+  Protocols: 
+  - http
+  Options:
+    primary: true
+  Mappings:
+  - Frontend: ''
+    Backend: '/nexus'
+  - Frontend: '/nexus'
+    Backend: '/nexus'    
+  - Frontend: /health
+    Backend: ''
+    Options:
+      health: true
+Scaling:
+  Min: 1
+  Max: -1
+Group-Overrides:
+  - components:
+    - nexus-2.6.4
+Install-Build-Required: false
